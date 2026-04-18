@@ -1,53 +1,63 @@
 const VaultUI = (() => {
     let items = [];
+    let categories = [];
     let currentCategory = 'all';
     let searchQuery = '';
     let currentViewId = null;
 
-    const CATEGORY_LABELS = {
-        servidor: 'Servidor / VPS',
-        banco_dados: 'Banco de Dados',
-        servico: 'Serviço',
-        email: 'Email',
-        api_key: 'API Key',
-        outro: 'Outro'
-    };
+    function getCategoryLabel(slug) {
+        if (!slug) return 'Outro';
+        const cat = categories.find(c => c.slug === slug);
+        return cat ? cat.name : slug;
+    }
 
-    const CATEGORY_FIELDS = {
-        servidor: [
-            { name: 'IP / Host', type: 'text', key: 'ip' },
-            { name: 'Usuário', type: 'text', key: 'username' },
-            { name: 'Senha', type: 'password', key: 'password' },
-            { name: 'Porta SSH', type: 'text', key: 'ssh_port' },
-            { name: 'Acesso Root', type: 'text', key: 'root_access' }
-        ],
-        banco_dados: [
-            { name: 'Host', type: 'text', key: 'host' },
-            { name: 'Porta', type: 'text', key: 'port' },
-            { name: 'Banco de Dados', type: 'text', key: 'database' },
-            { name: 'Usuário', type: 'text', key: 'username' },
-            { name: 'Senha', type: 'password', key: 'password' }
-        ],
-        servico: [
-            { name: 'URL', type: 'text', key: 'url' },
-            { name: 'Usuário', type: 'text', key: 'username' },
-            { name: 'Senha', type: 'password', key: 'password' }
-        ],
-        email: [
-            { name: 'Email', type: 'text', key: 'email' },
-            { name: 'Senha', type: 'password', key: 'password' },
-            { name: 'Servidor IMAP', type: 'text', key: 'imap' },
-            { name: 'Servidor SMTP', type: 'text', key: 'smtp' }
-        ],
-        api_key: [
-            { name: 'Chave', type: 'password', key: 'key' },
-            { name: 'URL', type: 'text', key: 'url' }
-        ],
-        outro: [
-            { name: 'Campo 1', type: 'text', key: 'field1' },
-            { name: 'Campo 2', type: 'password', key: 'field2' }
-        ]
-    };
+    function getCategoryFields(slug) {
+        if (!slug) return [{ name: 'Campo 1', type: 'text', key: 'field1' }, { name: 'Campo 2', type: 'password', key: 'field2' }];
+        const cat = categories.find(c => c.slug === slug);
+        if (cat && cat.fields && cat.fields.length > 0) return cat.fields;
+        return [{ name: 'Campo 1', type: 'text', key: 'field1' }, { name: 'Campo 2', type: 'password', key: 'field2' }];
+    }
+
+    async function loadCategories() {
+        try {
+            const response = await fetch('/api/category.php');
+            const data = await response.json();
+            if (data.success) {
+                categories = data.categories;
+                renderSidebar();
+                renderCategorySelect();
+            }
+        } catch (err) {
+            App.showToast('Erro ao carregar categorias', 'error');
+        }
+    }
+
+    function renderSidebar() {
+        const nav = document.getElementById('vault-categories');
+        if (!nav) return;
+
+        let html = '<a href="#" class="category-link' + (currentCategory === 'all' ? ' active' : '') + '" data-category="all">Todos</a>';
+        for (const cat of categories) {
+            html += '<a href="#" class="category-link' + (currentCategory === cat.slug ? ' active' : '') + '" data-category="' + escapeAttr(cat.slug) + '">' + escapeHtml(cat.name) + '</a>';
+        }
+        nav.innerHTML = html;
+    }
+
+    function renderCategorySelect() {
+        const select = document.getElementById('item-category');
+        if (!select) return;
+
+        const currentValue = select.value;
+        let html = '';
+        for (const cat of categories) {
+            html += '<option value="' + escapeAttr(cat.slug) + '">' + escapeHtml(cat.name) + '</option>';
+        }
+        select.innerHTML = html;
+
+        if (currentValue && categories.find(c => c.slug === currentValue)) {
+            select.value = currentValue;
+        }
+    }
 
     async function loadItems() {
         try {
@@ -73,7 +83,6 @@ const VaultUI = (() => {
 
     function renderItems() {
         const container = document.getElementById('vault-items');
-        const emptyEl = document.getElementById('vault-empty');
         const countEl = document.getElementById('vault-count');
         if (!container) return;
 
@@ -101,7 +110,7 @@ const VaultUI = (() => {
             card.className = 'item-card';
             card.dataset.id = item.id;
 
-            const categoryLabel = CATEGORY_LABELS[item.category] || item.category || 'Outro';
+            const categoryLabel = getCategoryLabel(item.category);
 
             card.innerHTML = `
                 <div class="item-card-header">
@@ -147,7 +156,7 @@ const VaultUI = (() => {
         const notesContainer = document.getElementById('view-notes');
 
         if (title) title.textContent = item.title;
-        if (category) category.textContent = CATEGORY_LABELS[item.category] || 'Outro';
+        if (category) category.textContent = getCategoryLabel(item.category);
 
         if (fieldsContainer) {
             fieldsContainer.innerHTML = '';
@@ -212,6 +221,8 @@ const VaultUI = (() => {
         document.getElementById('item-id').value = '';
         fieldsContainer.innerHTML = '';
 
+        renderCategorySelect();
+
         if (itemId) {
             const item = items.find(i => String(i.id) === String(itemId));
             if (!item) return;
@@ -219,13 +230,15 @@ const VaultUI = (() => {
             modalTitle.textContent = 'Editar Item';
             document.getElementById('item-id').value = item.id;
             document.getElementById('item-title').value = item.title;
-            categorySelect.value = item.category || 'outro';
+            categorySelect.value = item.category || '';
 
             loadFieldsForCategory(item.category, item);
         } else {
             modalTitle.textContent = 'Novo Item';
-            categorySelect.value = 'servidor';
-            loadFieldsForCategory('servidor');
+            if (categories.length > 0) {
+                categorySelect.value = categories[0].slug;
+                loadFieldsForCategory(categories[0].slug);
+            }
         }
 
         modal.style.display = 'flex';
@@ -233,7 +246,7 @@ const VaultUI = (() => {
 
     function loadFieldsForCategory(category, existingItem = null) {
         const fieldsContainer = document.getElementById('fields-container');
-        const fields = CATEGORY_FIELDS[category] || CATEGORY_FIELDS.outro;
+        const fields = getCategoryFields(category);
 
         let existingData = null;
         if (existingItem) {
@@ -419,6 +432,191 @@ const VaultUI = (() => {
         return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
+    // --- Category Management ---
+
+    let editingCategoryId = null;
+
+    function openCategoryModal() {
+        editingCategoryId = null;
+        const modal = document.getElementById('category-modal');
+        document.getElementById('cat-modal-title').textContent = 'Gerenciar Categorias';
+        document.getElementById('cat-form-section').style.display = 'none';
+        document.getElementById('cat-list-section').style.display = 'block';
+        renderCategoryList();
+        modal.style.display = 'flex';
+    }
+
+    function renderCategoryList() {
+        const listEl = document.getElementById('cat-list');
+        if (!listEl) return;
+
+        if (categories.length === 0) {
+            listEl.innerHTML = '<p style="text-align:center;color:var(--text-muted);">Nenhuma categoria</p>';
+            return;
+        }
+
+        listEl.innerHTML = '';
+        for (const cat of categories) {
+            const item = document.createElement('div');
+            item.className = 'category-list-item';
+            item.innerHTML = `
+                <div class="cat-info">
+                    <span class="cat-name">${escapeHtml(cat.name)}</span>
+                    <span class="cat-slug">${escapeHtml(cat.slug)} — ${cat.fields.length} campo(s)</span>
+                </div>
+                <div class="cat-actions">
+                    <button class="btn btn-secondary btn-sm cat-edit" data-id="${cat.id}">Editar</button>
+                    <button class="btn btn-danger btn-sm cat-delete" data-id="${cat.id}">Excluir</button>
+                </div>
+            `;
+            listEl.appendChild(item);
+        }
+
+        listEl.querySelectorAll('.cat-edit').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const cat = categories.find(c => c.id === parseInt(btn.dataset.id));
+                if (cat) editCategory(cat);
+            });
+        });
+
+        listEl.querySelectorAll('.cat-delete').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const cat = categories.find(c => c.id === parseInt(btn.dataset.id));
+                if (!cat) return;
+                if (!confirm(`Excluir categoria "${cat.name}"?`)) return;
+
+                const result = await App.apiCall('/api/category.php', {
+                    action: 'delete',
+                    id: cat.id,
+                    csrf_token: App.getCSRFToken()
+                });
+
+                if (result.success) {
+                    App.showToast('Categoria excluída');
+                    await loadCategories();
+                    renderCategoryList();
+                } else {
+                    App.showToast(result.error || 'Erro ao excluir', 'error');
+                }
+            });
+        });
+    }
+
+    function editCategory(cat) {
+        editingCategoryId = cat.id;
+        document.getElementById('cat-modal-title').textContent = 'Editar Categoria';
+        document.getElementById('cat-list-section').style.display = 'none';
+        document.getElementById('cat-form-section').style.display = 'block';
+        document.getElementById('cat-name').value = cat.name;
+        document.getElementById('cat-slug').value = cat.slug;
+        renderCatFieldRows(cat.fields);
+    }
+
+    function showCategoryCreateForm() {
+        editingCategoryId = null;
+        document.getElementById('cat-modal-title').textContent = 'Nova Categoria';
+        document.getElementById('cat-list-section').style.display = 'none';
+        document.getElementById('cat-form-section').style.display = 'block';
+        document.getElementById('cat-name').value = '';
+        document.getElementById('cat-slug').value = '';
+        renderCatFieldRows([
+            { name: 'Usuário', type: 'text', key: 'username' },
+            { name: 'Senha', type: 'password', key: 'password' }
+        ]);
+    }
+
+    function renderCatFieldRows(fields) {
+        const container = document.getElementById('cat-fields-container');
+        container.innerHTML = '';
+        for (const field of fields) {
+            addCatFieldRow(field.name, field.type, field.key);
+        }
+    }
+
+    function addCatFieldRow(name = '', type = 'text', key = '') {
+        const container = document.getElementById('cat-fields-container');
+        const row = document.createElement('div');
+        row.className = 'field-row';
+        row.innerHTML = `
+            <input type="text" placeholder="Nome" value="${escapeAttr(name)}" class="field-name" style="flex:2">
+            <select class="field-type-select" style="flex:1">
+                <option value="text" ${type === 'text' ? 'selected' : ''}>Texto</option>
+                <option value="password" ${type === 'password' ? 'selected' : ''}>Senha</option>
+            </select>
+            <input type="text" placeholder="key" value="${escapeAttr(key)}" class="field-key" style="flex:1">
+            <button type="button" class="btn-remove-field">&times;</button>
+        `;
+        row.querySelector('.btn-remove-field').addEventListener('click', () => row.remove());
+        container.appendChild(row);
+    }
+
+    function collectCatFields() {
+        const rows = document.querySelectorAll('#cat-fields-container .field-row');
+        const fields = [];
+        rows.forEach(row => {
+            const name = row.querySelector('.field-name').value.trim();
+            const type = row.querySelector('.field-type-select').value;
+            const key = row.querySelector('.field-key').value.trim();
+            if (name && key) {
+                fields.push({ name, type, key });
+            }
+        });
+        return fields;
+    }
+
+    function slugify(text) {
+        return text.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9_]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '')
+            .substring(0, 100);
+    }
+
+    async function saveCategory() {
+        const name = document.getElementById('cat-name').value.trim();
+        const slug = document.getElementById('cat-slug').value.trim();
+        const fields = collectCatFields();
+
+        if (!name) {
+            App.showToast('Informe o nome da categoria', 'error');
+            return;
+        }
+        if (!slug) {
+            App.showToast('Informe o slug', 'error');
+            return;
+        }
+        if (fields.length === 0) {
+            App.showToast('Adicione pelo menos um campo', 'error');
+            return;
+        }
+
+        const payload = {
+            name,
+            slug,
+            fields,
+            csrf_token: App.getCSRFToken()
+        };
+
+        let result;
+        if (editingCategoryId) {
+            payload.action = 'update';
+            payload.id = editingCategoryId;
+            result = await App.apiCall('/api/category.php', payload);
+        } else {
+            payload.action = 'create';
+            result = await App.apiCall('/api/category.php', payload);
+        }
+
+        if (result.success) {
+            App.showToast(editingCategoryId ? 'Categoria atualizada!' : 'Categoria criada!');
+            await loadCategories();
+            openCategoryModal();
+        } else {
+            App.showToast(result.error || 'Erro ao salvar', 'error');
+        }
+    }
+
     async function init() {
         const email = document.getElementById('user-email');
         const sessionEmail = document.querySelector('meta[name="user-email"]');
@@ -433,17 +631,18 @@ const VaultUI = (() => {
         }
 
         App.initAutoLock();
+        await loadCategories();
         await loadItems();
 
-        // Category links
-        document.querySelectorAll('.category-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                document.querySelectorAll('.category-link').forEach(l => l.classList.remove('active'));
-                link.classList.add('active');
-                currentCategory = link.dataset.category;
-                renderItems();
-            });
+        // Category links — event delegation on nav
+        document.getElementById('vault-categories')?.addEventListener('click', (e) => {
+            const link = e.target.closest('.category-link');
+            if (!link) return;
+            e.preventDefault();
+            document.querySelectorAll('.category-link').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            currentCategory = link.dataset.category;
+            renderItems();
         });
 
         // Search
@@ -506,6 +705,22 @@ const VaultUI = (() => {
         // Export
         document.getElementById('btn-export')?.addEventListener('click', exportVault);
 
+        // Category management
+        document.getElementById('btn-manage-categories')?.addEventListener('click', openCategoryModal);
+        document.getElementById('cat-modal-close')?.addEventListener('click', () => closeModal('category-modal'));
+        document.getElementById('cat-btn-add')?.addEventListener('click', showCategoryCreateForm);
+        document.getElementById('cat-btn-back')?.addEventListener('click', openCategoryModal);
+        document.getElementById('cat-btn-save')?.addEventListener('click', saveCategory);
+        document.getElementById('cat-btn-add-field')?.addEventListener('click', () => addCatFieldRow());
+
+        // Auto-slug from name
+        document.getElementById('cat-name')?.addEventListener('input', (e) => {
+            const slugInput = document.getElementById('cat-slug');
+            if (slugInput && !editingCategoryId) {
+                slugInput.value = slugify(e.target.value);
+            }
+        });
+
         // Escape key closes modals
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -518,5 +733,5 @@ const VaultUI = (() => {
 
     document.addEventListener('DOMContentLoaded', init);
 
-    return { loadItems, renderItems };
+    return { loadItems, renderItems, loadCategories };
 })();

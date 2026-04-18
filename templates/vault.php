@@ -21,16 +21,9 @@ ob_start();
     <div class="vault-body">
         <aside class="vault-sidebar">
             <button class="btn btn-primary btn-block" id="btn-add-item">+ Adicionar Item</button>
-            <nav class="vault-categories">
-                <a href="#" class="category-link active" data-category="all">Todos</a>
-                <a href="#" class="category-link" data-category="servidor">Servidor / VPS</a>
-                <a href="#" class="category-link" data-category="banco_dados">Banco de Dados</a>
-                <a href="#" class="category-link" data-category="servico">Serviço</a>
-                <a href="#" class="category-link" data-category="email">Email</a>
-                <a href="#" class="category-link" data-category="api_key">API Key</a>
-                <a href="#" class="category-link" data-category="outro">Outro</a>
-            </nav>
+            <nav id="vault-categories" class="vault-categories"></nav>
             <div class="vault-actions">
+                <button class="btn btn-secondary btn-sm btn-block" id="btn-manage-categories">Gerenciar Categorias</button>
                 <button class="btn btn-secondary btn-sm btn-block" id="btn-export">Exportar Cofre</button>
             </div>
         </aside>
@@ -65,14 +58,7 @@ ob_start();
             </div>
             <div class="form-group">
                 <label for="item-category">Categoria</label>
-                <select id="item-category" name="category">
-                    <option value="servidor">Servidor / VPS</option>
-                    <option value="banco_dados">Banco de Dados</option>
-                    <option value="servico">Serviço</option>
-                    <option value="email">Email</option>
-                    <option value="api_key">API Key</option>
-                    <option value="outro">Outro</option>
-                </select>
+                <select id="item-category" name="category"></select>
             </div>
             <div class="form-group">
                 <label>Campos</label>
@@ -104,6 +90,45 @@ ob_start();
         <div class="modal-actions">
             <button class="btn btn-secondary" id="btn-view-edit">Editar</button>
             <button class="btn btn-danger" id="btn-view-delete">Excluir</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de gerenciar categorias -->
+<div class="modal-overlay" id="category-modal" style="display:none">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="cat-modal-title">Gerenciar Categorias</h2>
+            <button class="modal-close" id="cat-modal-close">&times;</button>
+        </div>
+
+        <!-- List section -->
+        <div id="cat-list-section">
+            <div class="modal-actions" style="margin-bottom:16px;">
+                <button type="button" class="btn btn-primary btn-sm" id="cat-btn-add">+ Nova Categoria</button>
+            </div>
+            <div id="cat-list"></div>
+        </div>
+
+        <!-- Form section -->
+        <div id="cat-form-section" style="display:none; padding: 24px;">
+            <div class="form-group">
+                <label for="cat-name">Nome</label>
+                <input type="text" id="cat-name" placeholder="Ex: Servidor Cloud" maxlength="100">
+            </div>
+            <div class="form-group">
+                <label for="cat-slug">Slug</label>
+                <input type="text" id="cat-slug" placeholder="Ex: servidor_cloud" maxlength="100">
+            </div>
+            <div class="form-group">
+                <label>Campos do Template</label>
+                <div id="cat-fields-container"></div>
+                <button type="button" class="btn btn-secondary btn-sm" id="cat-btn-add-field">+ Adicionar Campo</button>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" id="cat-btn-back">Voltar</button>
+                <button type="button" class="btn btn-primary" id="cat-btn-save">Salvar</button>
+            </div>
         </div>
     </div>
 </div>

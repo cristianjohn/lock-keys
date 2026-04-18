@@ -46,6 +46,20 @@ CREATE TABLE audit_log (
     INDEX idx_audit_created (created_at)
 ) ENGINE=InnoDB;
 
+CREATE TABLE categories (
+    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT UNSIGNED    NOT NULL,
+    name        VARCHAR(100)    NOT NULL,
+    slug        VARCHAR(100)    NOT NULL,
+    fields      JSON            NOT NULL,
+    sort_order  INT UNSIGNED    NOT NULL DEFAULT 0,
+    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_slug (user_id, slug),
+    INDEX idx_categories_user (user_id),
+    CONSTRAINT fk_categories_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE login_attempts (
     id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     ip_address      VARCHAR(45)     NOT NULL,

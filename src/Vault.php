@@ -36,10 +36,7 @@ class Vault
             return ['success' => false, 'error' => 'Tag de autenticação inválida'];
         }
 
-        $validCategories = ['servidor', 'banco_dados', 'servico', 'email', 'api_key', 'outro'];
-        if ($category !== null && !in_array($category, $validCategories, true)) {
-            $category = 'outro';
-        }
+        $category = $this->validateCategory($category);
 
         $pdo = Database::getInstance()->getConnection();
         $stmt = $pdo->prepare(
@@ -107,10 +104,7 @@ class Vault
             return ['success' => false, 'error' => 'Título inválido'];
         }
 
-        $validCategories = ['servidor', 'banco_dados', 'servico', 'email', 'api_key', 'outro'];
-        if ($category !== null && !in_array($category, $validCategories, true)) {
-            $category = 'outro';
-        }
+        $category = $this->validateCategory($category);
 
         $pdo = Database::getInstance()->getConnection();
         $stmt = $pdo->prepare(
@@ -163,5 +157,15 @@ class Vault
         $stmt->execute([$newFav, $itemId, $userId]);
 
         return ['success' => true, 'favorite' => $newFav];
+    }
+
+    private function validateCategory(?string $category): ?string
+    {
+        if ($category === null) return null;
+        $category = trim($category);
+        if (strlen($category) > 100 || !preg_match('/^[a-z][a-z0-9_]*$/', $category)) {
+            return null;
+        }
+        return $category;
     }
 }

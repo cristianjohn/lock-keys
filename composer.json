@@ -2,6 +2,7 @@
     "name": "cristianjohn/lock-keys",
     "description": "Gerenciador de senhas seguro com arquitetura zero-knowledge",
     "type": "project",
+    "version": "1.1.0",
     "homepage": "https://github.com/cristianjohn/lock-keys",
     "support": {
         "issues": "https://github.com/cristianjohn/lock-keys/issues"

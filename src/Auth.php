@@ -5,6 +5,7 @@ namespace LockKeys;
 use LockKeys\Database;
 use LockKeys\RateLimiter;
 use LockKeys\AuditLog;
+use LockKeys\Category;
 
 class Auth
 {
@@ -41,6 +42,8 @@ class Auth
         $stmt->execute([$email, $authHash, $salt, $kdfIterations]);
 
         $userId = (int)$pdo->lastInsertId();
+
+        Category::initDefaultsForUser($userId);
 
         AuditLog::log($userId, 'auth.register');
 
