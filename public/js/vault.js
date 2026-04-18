@@ -136,7 +136,7 @@ const VaultUI = (() => {
         const masterKey = App.getMasterKey();
         if (!masterKey) {
             App.showToast('Sessão expirada', 'error');
-            App.lockVault();
+            App.logout();
             return;
         }
 
@@ -749,7 +749,7 @@ const VaultUI = (() => {
             return;
         }
 
-        App.initAutoLock();
+        App.initAutoLogout();
         await loadCategories();
         await loadItems();
 

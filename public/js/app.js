@@ -1,7 +1,6 @@
 const App = (() => {
     let masterKey = null;
-    const AUTO_LOCK_MINUTES = 15;
-    let autoLockTimer = null;
+    let autoLogoutTimer = null;
 
     function getCSRFToken() {
         const meta = document.querySelector('meta[name="csrf-token"]');
@@ -214,7 +213,7 @@ const App = (() => {
         if (keyMaterial) {
             try {
                 masterKey = await importMasterKey(keyMaterial);
-                resetAutoLock();
+                resetAutoLogout();
                 return true;
             } catch {
                 sessionStorage.removeItem('master_key_material');
@@ -224,13 +223,6 @@ const App = (() => {
         return false;
     }
 
-    function lockVault() {
-        masterKey = null;
-        sessionStorage.removeItem('master_key_material');
-        clearTimeout(autoLockTimer);
-        window.location.href = '/login';
-    }
-
     async function logout() {
         await apiCall('/api/auth.php', { action: 'logout' });
         masterKey = null;
@@ -238,20 +230,25 @@ const App = (() => {
         window.location.href = '/login';
     }
 
-    function resetAutoLock() {
-        clearTimeout(autoLockTimer);
-        autoLockTimer = setTimeout(() => {
-            lockVault();
-        }, AUTO_LOCK_MINUTES * 60 * 1000);
+    function getAutoLogoutMinutes() {
+        const meta = document.querySelector('meta[name="auto-logout-minutes"]');
+        return parseInt(meta?.content, 10) || 15;
     }
 
-    function initAutoLock() {
+    function resetAutoLogout() {
+        clearTimeout(autoLogoutTimer);
+        autoLogoutTimer = setTimeout(() => {
+            logout();
+        }, getAutoLogoutMinutes() * 60 * 1000);
+    }
+
+    function initAutoLogout() {
         ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
             document.addEventListener(evt, () => {
-                if (masterKey) resetAutoLock();
+                if (masterKey) resetAutoLogout();
             }, { passive: true });
         });
-        resetAutoLock();
+        resetAutoLogout();
     }
 
     function showToast(message, type = 'success') {
@@ -271,14 +268,12 @@ const App = (() => {
         if (loginForm) loginForm.addEventListener('submit', handleLogin);
         if (registerForm) registerForm.addEventListener('submit', handleRegister);
 
-        const btnLock = document.getElementById('btn-lock');
         const btnLogout = document.getElementById('btn-logout');
 
-        if (btnLock) btnLock.addEventListener('click', lockVault);
         if (btnLogout) btnLogout.addEventListener('click', logout);
     }
 
     document.addEventListener('DOMContentLoaded', init);
 
-    return { getMasterKey, initVaultSession, lockVault, logout, showToast, getCSRFToken, apiCall, initAutoLock };
+    return { getMasterKey, initVaultSession, logout, showToast, getCSRFToken, apiCall, initAutoLogout };
 })();

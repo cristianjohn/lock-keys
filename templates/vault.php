@@ -13,7 +13,7 @@ ob_start();
         </div>
         <div class="vault-header-right">
             <span class="user-email" id="user-email"></span>
-            <button class="btn btn-secondary btn-sm" id="btn-lock">Bloquear</button>
+            <meta name="auto-logout-minutes" content="<?= htmlspecialchars($_ENV['AUTO_LOGOUT_MINUTES'] ?? '15') ?>">
             <button class="btn btn-secondary btn-sm" id="btn-logout">Sair</button>
         </div>
     </header>
