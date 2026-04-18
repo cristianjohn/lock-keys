@@ -24,6 +24,8 @@ php -r "echo 'base64:' . base64_encode(random_bytes(32)) . PHP_EOL;"
 
 There are no composer scripts, no test suite, and no build step. The web server document root must point to `public/`.
 
+**Version bump:** Whenever JS (`public/js/`) or CSS (`public/css/`) files are changed, increment the `version` field in `composer.json` to bust client-side caches.
+
 ## Architecture
 
 ### Routing & Entry Point

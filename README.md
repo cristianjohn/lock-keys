@@ -42,7 +42,7 @@ Lock Keys is a self-hosted password manager that keeps your credentials safe usi
 
 ```bash
 # 1. Clone the repository
-git clone <repo-url> lock-keys
+git clone https://github.com/cristianjohn/lock-keys.git lock-keys
 cd lock-keys
 
 # 2. Install dependencies
@@ -152,7 +152,7 @@ O Lock Keys e um gerenciador de senhas auto-hospedado que mantem suas credenciai
 
 ```bash
 # 1. Clone o repositorio
-git clone <repo-url> lock-keys
+git clone https://github.com/cristianjohn/lock-keys.git lock-keys
 cd lock-keys
 
 # 2. Instale as dependencias
