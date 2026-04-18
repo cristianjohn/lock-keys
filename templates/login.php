@@ -1,5 +1,5 @@
 <?php
-use Senhas\Csrf;
+use LockKeys\Csrf;
 
 $csrf = Csrf::getToken();
 $title = 'Entrar';
@@ -8,7 +8,7 @@ ob_start();
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-header">
-            <h1>Senhas</h1>
+            <h1>Lock Keys</h1>
             <p>Gerenciador de senhas seguro</p>
         </div>
 

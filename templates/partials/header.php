@@ -1,5 +1,5 @@
 <?php
-use Senhas\Csrf;
+use LockKeys\Csrf;
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -7,7 +7,7 @@ use Senhas\Csrf;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?= Csrf::meta() ?>
-    <title><?= htmlspecialchars($title ?? 'Senhas') ?> — Gerenciador de Senhas</title>
+    <title><?= htmlspecialchars($title ?? 'Lock Keys') ?> — Gerenciador de Senhas</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>

@@ -1,6 +1,6 @@
 <?php
 
-namespace Senhas;
+namespace LockKeys;
 
 class SecurityHeaders
 {

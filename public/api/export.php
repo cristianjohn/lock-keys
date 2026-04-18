@@ -3,10 +3,10 @@
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Dotenv\Dotenv;
-use Senhas\Session;
-use Senhas\SecurityHeaders;
-use Senhas\Csrf;
-use Senhas\Export;
+use LockKeys\Session;
+use LockKeys\SecurityHeaders;
+use LockKeys\Csrf;
+use LockKeys\Export;
 
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../..');
 $dotenv->load();

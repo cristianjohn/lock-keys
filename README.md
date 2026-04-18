@@ -68,7 +68,7 @@ mysql -u root -p < database/schema.sql
 
 ```
 lock-keys/
-├── src/Senhas/
+├── src/LockKeys/
 │   ├── Auth.php              # Authentication logic
 │   ├── Vault.php             # Password vault operations
 │   ├── Database.php          # Database singleton (PDO)

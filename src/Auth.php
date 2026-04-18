@@ -1,10 +1,10 @@
 <?php
 
-namespace Senhas;
+namespace LockKeys;
 
-use Senhas\Database;
-use Senhas\RateLimiter;
-use Senhas\AuditLog;
+use LockKeys\Database;
+use LockKeys\RateLimiter;
+use LockKeys\AuditLog;
 
 class Auth
 {

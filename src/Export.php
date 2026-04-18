@@ -1,10 +1,10 @@
 <?php
 
-namespace Senhas;
+namespace LockKeys;
 
-use Senhas\Database;
-use Senhas\Session;
-use Senhas\AuditLog;
+use LockKeys\Database;
+use LockKeys\Session;
+use LockKeys\AuditLog;
 
 class Export
 {

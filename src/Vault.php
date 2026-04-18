@@ -1,9 +1,9 @@
 <?php
 
-namespace Senhas;
+namespace LockKeys;
 
-use Senhas\Database;
-use Senhas\AuditLog;
+use LockKeys\Database;
+use LockKeys\AuditLog;
 
 class Vault
 {

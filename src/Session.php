@@ -1,6 +1,6 @@
 <?php
 
-namespace Senhas;
+namespace LockKeys;
 
 class Session
 {
@@ -12,7 +12,7 @@ class Session
             return;
         }
 
-        $name = $_ENV['SESSION_NAME'] ?? 'senhas_session';
+        $name = $_ENV['SESSION_NAME'] ?? 'lockkeys_session';
         session_name($name);
 
         $lifetime = (int)($_ENV['SESSION_LIFETIME'] ?? 3600);

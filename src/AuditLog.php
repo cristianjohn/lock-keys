@@ -1,8 +1,8 @@
 <?php
 
-namespace Senhas;
+namespace LockKeys;
 
-use Senhas\Database;
+use LockKeys\Database;
 
 class AuditLog
 {

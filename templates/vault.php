@@ -1,5 +1,5 @@
 <?php
-use Senhas\Csrf;
+use LockKeys\Csrf;
 
 $csrf = Csrf::getToken();
 $title = 'Cofre';
@@ -8,7 +8,7 @@ ob_start();
 <div class="vault-container">
     <header class="vault-header">
         <div class="vault-header-left">
-            <h1>Senhas</h1>
+            <h1>Lock Keys</h1>
             <span class="vault-count" id="vault-count">0 itens</span>
         </div>
         <div class="vault-header-right">
