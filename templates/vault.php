@@ -8,6 +8,7 @@ ob_start();
 <div class="vault-container">
     <header class="vault-header">
         <div class="vault-header-left">
+            <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
             <h1>Lock Keys</h1>
             <span class="vault-count" id="vault-count">0 itens</span>
         </div>
@@ -19,6 +20,7 @@ ob_start();
     </header>
 
     <div class="vault-body">
+        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
         <aside class="vault-sidebar">
             <button class="btn btn-primary btn-block" id="btn-add-item">+ Adicionar Item</button>
             <nav id="vault-categories" class="vault-categories"></nav>

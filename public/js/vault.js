@@ -753,6 +753,28 @@ const VaultUI = (() => {
         await loadCategories();
         await loadItems();
 
+        // Sidebar toggle (mobile)
+        const sidebar = document.querySelector('.vault-sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        const toggleBtn = document.getElementById('sidebar-toggle');
+
+        function openSidebar() {
+            sidebar?.classList.add('open');
+            backdrop?.classList.add('open');
+        }
+        function closeSidebar() {
+            sidebar?.classList.remove('open');
+            backdrop?.classList.remove('open');
+        }
+
+        toggleBtn?.addEventListener('click', () => {
+            sidebar?.classList.contains('open') ? closeSidebar() : openSidebar();
+        });
+        backdrop?.addEventListener('click', closeSidebar);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeSidebar();
+        });
+
         // Category links — event delegation on nav
         document.getElementById('vault-categories')?.addEventListener('click', (e) => {
             const link = e.target.closest('.category-link');
@@ -762,6 +784,7 @@ const VaultUI = (() => {
             link.classList.add('active');
             currentCategory = link.dataset.category;
             renderItems();
+            closeSidebar();
         });
 
         // Search
