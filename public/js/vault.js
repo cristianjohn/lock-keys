@@ -232,6 +232,10 @@ const VaultUI = (() => {
             document.getElementById('item-title').value = item.title;
             categorySelect.value = item.category || '';
 
+            if (item._decrypted) {
+                document.getElementById('item-notes').value = item._decrypted.notes || '';
+            }
+
             loadFieldsForCategory(item.category, item);
         } else {
             modalTitle.textContent = 'Novo Item';
@@ -257,8 +261,15 @@ const VaultUI = (() => {
         }
 
         fieldsContainer.innerHTML = '';
-        for (const field of fields) {
-            addFieldRow(field.name, field.type, existingData ? (existingData.fields?.find(f => f.key === field.key)?.value || '') : '');
+        if (existingData && existingData.fields && existingData.fields.length > 0) {
+            for (const savedField of existingData.fields) {
+                const matched = fields.find(f => f.name === savedField.name);
+                addFieldRow(savedField.name, matched?.type || savedField.type || 'text', savedField.value || '');
+            }
+        } else {
+            for (const field of fields) {
+                addFieldRow(field.name, field.type, '');
+            }
         }
     }
 
@@ -372,7 +383,7 @@ const VaultUI = (() => {
     function closeModal(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) modal.style.display = 'none';
-        currentViewId = null;
+        if (modalId === 'view-modal') currentViewId = null;
     }
 
     async function copyToClipboard(text) {
@@ -823,10 +834,12 @@ const VaultUI = (() => {
         });
 
         // View modal actions
-        document.getElementById('btn-view-edit')?.addEventListener('click', async () => {
+        document.getElementById('btn-view-edit')?.addEventListener('click', async (e) => {
+            e.stopPropagation();
             if (currentViewId) {
+                const editId = currentViewId;
                 closeModal('view-modal');
-                const item = items.find(i => String(i.id) === String(currentViewId));
+                const item = items.find(i => String(i.id) === String(editId));
                 if (item) {
                     const masterKey = App.getMasterKey();
                     if (masterKey) {
@@ -835,7 +848,7 @@ const VaultUI = (() => {
                             item._decrypted = JSON.parse(json);
                         } catch {}
                     }
-                    openItemForm(currentViewId);
+                    openItemForm(editId);
                 }
             }
         });
