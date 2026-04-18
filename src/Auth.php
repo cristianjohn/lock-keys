@@ -89,4 +89,78 @@ class Auth
         AuditLog::log($userId, 'auth.logout');
         Session::destroy();
     }
+
+    public function changePassword(string $currentAuthHash, string $newAuthHash, string $newSalt, array $reencryptedItems): array
+    {
+        $userId = Session::get('user_id');
+        if (!$userId) {
+            return ['success' => false, 'error' => 'Não autenticado'];
+        }
+
+        if (strlen($currentAuthHash) < 64 || strlen($newAuthHash) < 64) {
+            return ['success' => false, 'error' => 'Hash de autenticação inválido'];
+        }
+
+        if (strlen($newSalt) < 64 || !ctype_xdigit($newSalt)) {
+            return ['success' => false, 'error' => 'Salt inválido'];
+        }
+
+        $db = Database::getInstance();
+        $pdo = $db->getConnection();
+
+        $stmt = $pdo->prepare("SELECT auth_hash FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+
+        if (!$user || !hash_equals($user['auth_hash'], $currentAuthHash)) {
+            AuditLog::log($userId, 'auth.change_password_failed');
+            return ['success' => false, 'error' => 'Senha atual incorreta'];
+        }
+
+        $validIds = [];
+        if (!empty($reencryptedItems)) {
+            $stmt = $pdo->prepare("SELECT id FROM vault_items WHERE user_id = ?");
+            $stmt->execute([$userId]);
+            $validIds = array_column($stmt->fetchAll(), 'id');
+        }
+
+        $db->beginTransaction();
+        try {
+            $stmt = $pdo->prepare("UPDATE users SET auth_hash = ?, password_salt = ? WHERE id = ?");
+            $stmt->execute([$newAuthHash, $newSalt, $userId]);
+
+            foreach ($reencryptedItems as $item) {
+                $itemId = (int)($item['id'] ?? 0);
+                if (!in_array($itemId, $validIds, true)) {
+                    $db->rollBack();
+                    return ['success' => false, 'error' => 'Item inválido: ' . $itemId];
+                }
+
+                $iv = $item['iv'] ?? '';
+                $authTag = $item['auth_tag'] ?? '';
+                $encryptedData = $item['encrypted_data'] ?? '';
+
+                if (strlen($iv) !== 24 || !ctype_xdigit($iv)) {
+                    $db->rollBack();
+                    return ['success' => false, 'error' => 'IV inválido para item ' . $itemId];
+                }
+                if (strlen($authTag) !== 32 || !ctype_xdigit($authTag)) {
+                    $db->rollBack();
+                    return ['success' => false, 'error' => 'Tag de autenticação inválida para item ' . $itemId];
+                }
+
+                $stmt = $pdo->prepare(
+                    "UPDATE vault_items SET encrypted_data = ?, iv = ?, auth_tag = ? WHERE id = ? AND user_id = ?"
+                );
+                $stmt->execute([$encryptedData, $iv, $authTag, $itemId, $userId]);
+            }
+
+            $db->commit();
+            AuditLog::log($userId, 'auth.change_password');
+            return ['success' => true];
+        } catch (\Throwable $e) {
+            $db->rollBack();
+            return ['success' => false, 'error' => 'Erro ao atualizar. Tente novamente.'];
+        }
+    }
 }

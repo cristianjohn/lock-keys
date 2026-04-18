@@ -1,5 +1,6 @@
 <?php
 use LockKeys\Csrf;
+use LockKeys\Session;
 
 $csrf = Csrf::getToken();
 $title = 'Cofre';
@@ -14,6 +15,7 @@ ob_start();
         </div>
         <div class="vault-header-right">
             <span class="user-email" id="user-email"></span>
+            <meta name="user-email" content="<?= htmlspecialchars(Session::get('user_email') ?? '', ENT_QUOTES, 'UTF-8') ?>">
             <meta name="auto-logout-minutes" content="<?= htmlspecialchars($_ENV['AUTO_LOGOUT_MINUTES'] ?? '15') ?>">
             <button class="btn btn-secondary btn-sm" id="btn-logout">Sair</button>
         </div>
@@ -28,6 +30,7 @@ ob_start();
                 <button class="btn btn-secondary btn-sm btn-block" id="btn-manage-categories">Gerenciar Categorias</button>
                 <button class="btn btn-secondary btn-sm btn-block" id="btn-import">Importar Cofre</button>
                 <button class="btn btn-secondary btn-sm btn-block" id="btn-export">Exportar Cofre</button>
+                <button class="btn btn-secondary btn-sm btn-block" id="btn-change-password">Alterar Senha Mestra</button>
             </div>
         </aside>
 
@@ -161,6 +164,79 @@ ob_start();
         <div class="modal-actions">
             <button class="btn btn-secondary" id="btn-import-cancel">Cancelar</button>
             <button class="btn btn-primary" id="btn-import-confirm" disabled>Importar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de alterar senha mestra -->
+<div class="modal-overlay" id="change-password-modal" style="display:none">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Alterar Senha Mestra</h2>
+            <button class="modal-close" id="change-password-modal-close">&times;</button>
+        </div>
+
+        <!-- Tela A: Aviso -->
+        <div id="change-password-warning" style="padding: 24px;">
+            <div class="warning-box">
+                <strong>Atenção:</strong> Alterar a senha mestra envolve recriptografar todos os itens do cofre.
+                <br><br>
+                <strong>Antes de continuar:</strong>
+                <ul>
+                    <li>Exporte seu cofre (botão "Exportar Cofre" no menu lateral)</li>
+                    <li>Salve o arquivo de exportação em local seguro</li>
+                </ul>
+                <br>
+                <strong>Se o processo falhar no meio:</strong>
+                <ul>
+                    <li>Faça login com sua <u>senha anterior</u></li>
+                    <li>Limpe todos os itens do cofre</li>
+                    <li>Importe o backup exportado</li>
+                </ul>
+                <br>
+                Após a alteração, os itens exportados <strong>anteriormente</strong> não poderão ser importados com a nova senha — apenas o backup feito agora servirá para recuperação.
+            </div>
+            <div class="ack-row">
+                <input type="checkbox" id="change-password-ack">
+                <label for="change-password-ack">Eu fiz backup do meu cofre e entendo os riscos</label>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="btn-change-password-cancel">Cancelar</button>
+                <button class="btn btn-primary" id="btn-change-password-continue" disabled>Continuar</button>
+            </div>
+        </div>
+
+        <!-- Tela B: Formulario -->
+        <div id="change-password-form-screen" style="display:none; padding: 24px;">
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label for="current-password">Senha Atual</label>
+                    <input type="password" id="current-password" placeholder="Sua senha atual" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">Nova Senha</label>
+                    <input type="password" id="new-password" placeholder="Mínimo 12 caracteres" required>
+                    <div style="margin-top:6px;">
+                        <div style="background:var(--bg-tertiary);border-radius:2px;height:4px;overflow:hidden;">
+                            <div id="cp-strength-bar" style="height:100%;width:0;transition:var(--transition);"></div>
+                        </div>
+                        <span id="cp-strength-text" style="font-size:12px;"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-new-password">Confirmar Nova Senha</label>
+                    <input type="password" id="confirm-new-password" placeholder="Repita a nova senha" required>
+                </div>
+                <div class="error-message" id="change-password-error" style="display:none;"></div>
+                <p id="change-password-progress" style="font-size:13px;color:var(--text-secondary);display:none;"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-change-password-back">Voltar</button>
+                    <button type="submit" class="btn btn-primary" id="btn-change-password-submit">
+                        <span class="btn-text">Alterar Senha</span>
+                        <span class="btn-loading" style="display:none;"><span class="spinner"></span> Alterando...</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

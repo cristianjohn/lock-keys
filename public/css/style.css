@@ -129,6 +129,39 @@ input:focus, select:focus, textarea:focus {
     margin-bottom: 16px;
 }
 
+.warning-box {
+    background: rgba(255,152,0,.1);
+    border: 1px solid rgba(255,152,0,.3);
+    color: #e67e22;
+    padding: 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.warning-box ul {
+    margin: 8px 0 0 18px;
+}
+
+.warning-box li {
+    margin-bottom: 4px;
+}
+
+.ack-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.ack-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+}
+
 /* Auth */
 .auth-container {
     display: flex;

@@ -95,5 +95,37 @@ if ($action === 'logout') {
     exit;
 }
 
+if ($action === 'change_password') {
+    $userId = Session::get('user_id');
+    if (!$userId) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Não autenticado']);
+        exit;
+    }
+
+    $csrfToken = $input['csrf_token'] ?? '';
+    if (!Csrf::validate($csrfToken)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Token CSRF inválido']);
+        exit;
+    }
+
+    $currentAuthHash = $input['current_auth_hash'] ?? '';
+    $newAuthHash = $input['new_auth_hash'] ?? '';
+    $newSalt = $input['new_salt'] ?? '';
+    $items = $input['items'] ?? [];
+
+    $auth = new Auth();
+    $result = $auth->changePassword($currentAuthHash, $newAuthHash, $newSalt, $items);
+
+    if ($result['success']) {
+        echo json_encode(['success' => true]);
+    } else {
+        http_response_code(400);
+        echo json_encode(['error' => $result['error']]);
+    }
+    exit;
+}
+
 http_response_code(400);
 echo json_encode(['error' => 'Ação inválida']);

@@ -747,6 +747,163 @@ const VaultUI = (() => {
         }
     }
 
+    // --- Change Password ---
+
+    function openChangePasswordModal() {
+        const form = document.getElementById('change-password-form');
+        if (form) form.reset();
+        const err = document.getElementById('change-password-error');
+        if (err) err.style.display = 'none';
+        const progress = document.getElementById('change-password-progress');
+        if (progress) progress.style.display = 'none';
+        const ack = document.getElementById('change-password-ack');
+        if (ack) ack.checked = false;
+        const continueBtn = document.getElementById('btn-change-password-continue');
+        if (continueBtn) continueBtn.disabled = true;
+
+        document.getElementById('change-password-warning').style.display = 'block';
+        document.getElementById('change-password-form-screen').style.display = 'none';
+
+        const modal = document.getElementById('change-password-modal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    async function handlePasswordChangeSubmit(e) {
+        e.preventDefault();
+
+        const errEl = document.getElementById('change-password-error');
+        const progressEl = document.getElementById('change-password-progress');
+        const submitBtn = document.getElementById('btn-change-password-submit');
+
+        function showError(msg) {
+            if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+        }
+        function hideError() { if (errEl) errEl.style.display = 'none'; }
+        function setLoading(loading) {
+            const text = submitBtn?.querySelector('.btn-text');
+            const spinner = submitBtn?.querySelector('.btn-loading');
+            if (submitBtn) submitBtn.disabled = loading;
+            if (text) text.style.display = loading ? 'none' : 'inline';
+            if (spinner) spinner.style.display = loading ? 'inline-flex' : 'none';
+        }
+
+        hideError();
+
+        const currentPassword = document.getElementById('current-password').value;
+        const newPassword = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-new-password').value;
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            showError('Preencha todos os campos');
+            return;
+        }
+
+        if (newPassword.length < 12) {
+            showError('A nova senha deve ter no mínimo 12 caracteres');
+            return;
+        }
+
+        const strength = Crypto.calculatePasswordStrength(newPassword);
+        if (strength.score < 2) {
+            showError('A nova senha é muito fraca. Use letras maiúsculas, minúsculas, números e símbolos.');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            showError('As senhas não coincidem');
+            return;
+        }
+
+        if (newPassword === currentPassword) {
+            showError('A nova senha deve ser diferente da atual');
+            return;
+        }
+
+        const masterKey = App.getMasterKey();
+        if (!masterKey) {
+            App.showToast('Sessão expirada', 'error');
+            App.lockVault();
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const currentAuthHash = await Crypto.deriveAuthHash(masterKey, currentPassword);
+
+            progressEl.style.display = 'block';
+            progressEl.textContent = 'Buscando itens do cofre...';
+
+            const response = await fetch('/api/vault.php');
+            const data = await response.json();
+            if (!data.success || !data.items) {
+                showError('Erro ao buscar itens do cofre');
+                setLoading(false);
+                progressEl.style.display = 'none';
+                return;
+            }
+
+            const allItems = data.items;
+            const decryptedItems = [];
+
+            for (let i = 0; i < allItems.length; i++) {
+                const item = allItems[i];
+                progressEl.textContent = 'Descriptografando ' + (i + 1) + ' de ' + allItems.length + '...';
+                const json = await Crypto.decryptData(item.encrypted_data, item.iv, item.auth_tag, masterKey);
+                decryptedItems.push({ id: item.id, plaintext: json });
+            }
+
+            const emailMeta = document.querySelector('meta[name="user-email"]');
+            const email = emailMeta ? emailMeta.getAttribute('content') : '';
+
+            const newMasterKey = await Crypto.deriveMasterKey(newPassword, email);
+            const newAuthHash = await Crypto.deriveAuthHash(newMasterKey, newPassword);
+            const newSalt = Crypto.arrayBufferToHex(await crypto.subtle.exportKey('raw', newMasterKey)).substring(0, 64);
+
+            const reencryptedItems = [];
+            for (let i = 0; i < decryptedItems.length; i++) {
+                const item = decryptedItems[i];
+                progressEl.textContent = 'Recriptografando ' + (i + 1) + ' de ' + decryptedItems.length + '...';
+                const encrypted = await Crypto.encryptData(item.plaintext, newMasterKey);
+                reencryptedItems.push({
+                    id: item.id,
+                    encrypted_data: encrypted.encrypted_data,
+                    iv: encrypted.iv,
+                    auth_tag: encrypted.auth_tag
+                });
+            }
+
+            progressEl.textContent = 'Atualizando servidor...';
+
+            const result = await App.apiCall('/api/auth.php', {
+                action: 'change_password',
+                current_auth_hash: currentAuthHash,
+                new_auth_hash: newAuthHash,
+                new_salt: newSalt,
+                items: reencryptedItems,
+                csrf_token: App.getCSRFToken()
+            });
+
+            if (result.success) {
+                await App.setMasterKey(newMasterKey);
+                progressEl.textContent = '';
+                progressEl.style.display = 'none';
+                App.showToast('Senha alterada com sucesso!');
+                closeModal('change-password-modal');
+                await loadItems();
+            } else {
+                showError(result.error || 'Erro ao alterar senha');
+                progressEl.style.display = 'none';
+            }
+        } catch (err) {
+            showError('Erro ao processar. Tente novamente.');
+            console.error('Change password error:', err);
+            progressEl.style.display = 'none';
+        }
+
+        setLoading(false);
+    }
+
     async function init() {
         const email = document.getElementById('user-email');
         const sessionEmail = document.querySelector('meta[name="user-email"]');
@@ -880,6 +1037,37 @@ const VaultUI = (() => {
             const slugInput = document.getElementById('cat-slug');
             if (slugInput && !editingCategoryId) {
                 slugInput.value = slugify(e.target.value);
+            }
+        });
+
+        // Change password
+        document.getElementById('btn-change-password')?.addEventListener('click', openChangePasswordModal);
+        document.getElementById('change-password-modal-close')?.addEventListener('click', () => closeModal('change-password-modal'));
+        document.getElementById('btn-change-password-cancel')?.addEventListener('click', () => closeModal('change-password-modal'));
+        document.getElementById('change-password-ack')?.addEventListener('change', (e) => {
+            const btn = document.getElementById('btn-change-password-continue');
+            if (btn) btn.disabled = !e.target.checked;
+        });
+        document.getElementById('btn-change-password-continue')?.addEventListener('click', () => {
+            document.getElementById('change-password-warning').style.display = 'none';
+            document.getElementById('change-password-form-screen').style.display = 'block';
+        });
+        document.getElementById('btn-change-password-back')?.addEventListener('click', () => {
+            document.getElementById('change-password-form-screen').style.display = 'none';
+            document.getElementById('change-password-warning').style.display = 'block';
+        });
+        document.getElementById('change-password-form')?.addEventListener('submit', handlePasswordChangeSubmit);
+        document.getElementById('new-password')?.addEventListener('input', (e) => {
+            const result = Crypto.calculatePasswordStrength(e.target.value);
+            const bar = document.getElementById('cp-strength-bar');
+            const text = document.getElementById('cp-strength-text');
+            if (bar) {
+                bar.style.width = ((result.score + 1) * 20) + '%';
+                bar.style.backgroundColor = result.color;
+            }
+            if (text) {
+                text.textContent = result.label;
+                text.style.color = result.color;
             }
         });
 

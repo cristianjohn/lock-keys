@@ -199,7 +199,7 @@ const App = (() => {
             'raw',
             raw,
             { name: 'AES-GCM', length: 256 },
-            false,
+            true,
             ['encrypt', 'decrypt']
         );
     }
@@ -251,6 +251,12 @@ const App = (() => {
         resetAutoLogout();
     }
 
+    async function setMasterKey(key) {
+        masterKey = key;
+        sessionStorage.setItem('master_key_material', await exportMasterKey(key));
+        resetAutoLogout();
+    }
+
     function showToast(message, type = 'success') {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
@@ -275,5 +281,5 @@ const App = (() => {
 
     document.addEventListener('DOMContentLoaded', init);
 
-    return { getMasterKey, initVaultSession, logout, showToast, getCSRFToken, apiCall, initAutoLogout };
+    return { getMasterKey, setMasterKey, initVaultSession, logout, showToast, getCSRFToken, apiCall, initAutoLogout };
 })();
