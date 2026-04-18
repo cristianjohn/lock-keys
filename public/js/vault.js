@@ -422,6 +422,125 @@ const VaultUI = (() => {
         App.showToast('Cofre exportado (dados permanecem criptografados)');
     }
 
+    // --- Import Vault ---
+
+    let importData = null;
+
+    function openImportModal() {
+        importData = null;
+        const fileInput = document.getElementById('import-file');
+        const preview = document.getElementById('import-preview');
+        const progress = document.getElementById('import-progress');
+        const confirmBtn = document.getElementById('btn-import-confirm');
+
+        if (fileInput) fileInput.value = '';
+        if (preview) preview.style.display = 'none';
+        if (progress) progress.style.display = 'none';
+        if (confirmBtn) confirmBtn.disabled = true;
+        document.getElementById('import-modal').style.display = 'flex';
+    }
+
+    function handleImportFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const preview = document.getElementById('import-preview');
+        const fileInfo = document.getElementById('import-file-info');
+        const confirmBtn = document.getElementById('btn-import-confirm');
+
+        if (!file.name.endsWith('.json')) {
+            App.showToast('Selecione um arquivo JSON', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const data = JSON.parse(event.target.result);
+
+                if (!data.version || data.version !== 1 || !Array.isArray(data.items)) {
+                    App.showToast('Arquivo de exportação inválido', 'error');
+                    return;
+                }
+
+                if (data.items.length === 0) {
+                    App.showToast('O arquivo não contém itens', 'error');
+                    return;
+                }
+
+                for (const item of data.items) {
+                    if (!item.title || !item.encrypted_data || !item.iv || !item.auth_tag) {
+                        App.showToast('Arquivo contém itens com dados incompletos', 'error');
+                        return;
+                    }
+                }
+
+                importData = data;
+                fileInfo.textContent = file.name + ' — ' + data.items.length + ' item(ns) encontrado(s)';
+                preview.style.display = 'block';
+                confirmBtn.disabled = false;
+            } catch (err) {
+                App.showToast('Erro ao ler o arquivo JSON', 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async function executeImport() {
+        if (!importData || !importData.items || importData.items.length === 0) return;
+
+        const confirmBtn = document.getElementById('btn-import-confirm');
+        const progressEl = document.getElementById('import-progress');
+        const progressText = document.getElementById('import-progress-text');
+
+        confirmBtn.disabled = true;
+        progressEl.style.display = 'block';
+
+        let imported = 0;
+        let failed = 0;
+        const total = importData.items.length;
+
+        for (let i = 0; i < total; i++) {
+            const item = importData.items[i];
+            progressText.textContent = 'Importando ' + (i + 1) + ' de ' + total + '...';
+
+            try {
+                const result = await App.apiCall('/api/vault.php', {
+                    action: 'create',
+                    title: item.title,
+                    category: item.category || null,
+                    encrypted_data: item.encrypted_data,
+                    iv: item.iv,
+                    auth_tag: item.auth_tag,
+                    csrf_token: App.getCSRFToken()
+                });
+
+                if (result.success) {
+                    imported++;
+                } else {
+                    failed++;
+                }
+            } catch (err) {
+                failed++;
+            }
+        }
+
+        progressText.textContent = 'Concluído: ' + imported + ' importado(s), ' + failed + ' falha(s).';
+
+        if (imported > 0) {
+            await loadItems();
+            App.showToast(imported + ' item(ns) importado(s) com sucesso');
+        }
+
+        if (failed > 0) {
+            App.showToast(failed + ' item(ns) falharam na importação', 'error');
+        }
+
+        setTimeout(() => {
+            closeModal('import-modal');
+        }, 1500);
+    }
+
     function escapeHtml(str) {
         const div = document.createElement('div');
         div.textContent = str;
@@ -704,6 +823,13 @@ const VaultUI = (() => {
 
         // Export
         document.getElementById('btn-export')?.addEventListener('click', exportVault);
+
+        // Import
+        document.getElementById('btn-import')?.addEventListener('click', openImportModal);
+        document.getElementById('import-modal-close')?.addEventListener('click', () => closeModal('import-modal'));
+        document.getElementById('btn-import-cancel')?.addEventListener('click', () => closeModal('import-modal'));
+        document.getElementById('import-file')?.addEventListener('change', handleImportFileSelect);
+        document.getElementById('btn-import-confirm')?.addEventListener('click', executeImport);
 
         // Category management
         document.getElementById('btn-manage-categories')?.addEventListener('click', openCategoryModal);

@@ -24,6 +24,7 @@ ob_start();
             <nav id="vault-categories" class="vault-categories"></nav>
             <div class="vault-actions">
                 <button class="btn btn-secondary btn-sm btn-block" id="btn-manage-categories">Gerenciar Categorias</button>
+                <button class="btn btn-secondary btn-sm btn-block" id="btn-import">Importar Cofre</button>
                 <button class="btn btn-secondary btn-sm btn-block" id="btn-export">Exportar Cofre</button>
             </div>
         </aside>
@@ -129,6 +130,35 @@ ob_start();
                 <button type="button" class="btn btn-secondary" id="cat-btn-back">Voltar</button>
                 <button type="button" class="btn btn-primary" id="cat-btn-save">Salvar</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de importar cofre -->
+<div class="modal-overlay" id="import-modal" style="display:none">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Importar Cofre</h2>
+            <button class="modal-close" id="import-modal-close">&times;</button>
+        </div>
+        <div style="padding: 24px;">
+            <div class="form-group">
+                <label>Arquivo de exportação</label>
+                <input type="file" id="import-file" accept=".json" style="padding:8px;">
+            </div>
+            <div id="import-preview" style="display:none;">
+                <p id="import-file-info" style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;"></p>
+                <div class="error-message" style="background:rgba(255,152,0,.1); border-color:rgba(255,152,0,.3); color:#e67e22;">
+                    Os itens importados continuam criptografados com a chave mestra original. Se você importar de uma conta diferente, os itens não poderão ser descriptografados.
+                </div>
+            </div>
+            <div id="import-progress" style="display:none; margin-top:16px;">
+                <p id="import-progress-text" style="font-size:13px; color:var(--text-secondary);"></p>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" id="btn-import-cancel">Cancelar</button>
+            <button class="btn btn-primary" id="btn-import-confirm" disabled>Importar</button>
         </div>
     </div>
 </div>
