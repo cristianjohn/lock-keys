@@ -34,6 +34,13 @@ if (!$input) {
 $action = $input['action'] ?? '';
 
 if ($action === 'register') {
+    $registrationEnabled = filter_var($_ENV['REGISTRATION_ENABLED'] ?? 'true', FILTER_VALIDATE_BOOLEAN);
+    if (!$registrationEnabled) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Cadastro desativado']);
+        exit;
+    }
+
     $csrfToken = $input['csrf_token'] ?? '';
     if (!Csrf::validate($csrfToken)) {
         http_response_code(403);

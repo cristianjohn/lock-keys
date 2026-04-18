@@ -32,9 +32,12 @@ ob_start();
                     <span class="btn-text">Entrar</span>
                     <span class="btn-loading" style="display:none">Derivando chave...</span>
                 </button>
+                <?php if ($registrationEnabled ?? true): ?>
                 <p class="auth-switch">Não tem conta? <a href="#" id="show-register">Criar conta</a></p>
+                <?php endif; ?>
             </form>
 
+            <?php if ($registrationEnabled ?? true): ?>
             <!-- Register Form -->
             <form id="register-form" class="auth-form">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
@@ -67,6 +70,7 @@ ob_start();
                 </button>
                 <p class="auth-switch">Já tem conta? <a href="#" id="show-login">Entrar</a></p>
             </form>
+            <?php endif; ?>
         </div>
     </div>
 </div>

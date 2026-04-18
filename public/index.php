@@ -11,6 +11,8 @@ use LockKeys\Csrf;
 $dotenv = Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
 
+$registrationEnabled = filter_var($_ENV['REGISTRATION_ENABLED'] ?? 'true', FILTER_VALIDATE_BOOLEAN);
+
 SecurityHeaders::apply();
 Session::start();
 
@@ -39,6 +41,10 @@ if ($uri === '/login') {
 if ($uri === '/register') {
     if (Session::isAuthenticated()) {
         header('Location: /vault');
+        exit;
+    }
+    if (!$registrationEnabled) {
+        header('Location: /login');
         exit;
     }
     $title = 'Criar Conta';
