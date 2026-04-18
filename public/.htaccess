@@ -1,0 +1,15 @@
+RewriteEngine On
+
+# Block access to hidden files
+RewriteRule (^\.|/\.) - [F,L]
+
+# Block access to src/, templates/, database/, vendor/
+RewriteRule ^(src|templates|database|vendor)/ - [F,L]
+
+# Block access to .env
+RewriteRule ^\.env$ - [F,L]
+
+# Route everything through index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]

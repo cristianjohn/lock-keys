@@ -1,0 +1,12 @@
+{
+    "name": "senhas/password-manager",
+    "description": "Gerenciador de senhas seguro com arquitetura zero-knowledge",
+    "require": {
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Senhas\\": "src/"
+        }
+    }
+}
